@@ -80,7 +80,7 @@ Available Topics :
     const socket = io();
     const form = document.getElementById('form');
     const input = document.getElementById('input');
-    let username = "koorosh";//prompt("WHO ARE YOU !?");
+    let username = prompt("WHO ARE YOU !?");
     if (username.length === 0) username = "Ghost In the Shell" ;
     const trans = new transport(socket,username);
     form.addEventListener('submit', function(e) {
