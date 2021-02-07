@@ -1,0 +1,27 @@
+{
+  "name": "signalingserver",
+  "version": "1.0.0",
+  "description": "Signaling Server",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kooroshh/RoomSignalingServer.git"
+  },
+  "keywords": [
+    "webrtc",
+    "signaling"
+  ],
+  "author": "Kooroshh",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kooroshh/RoomSignalingServer/issues"
+  },
+  "homepage": "https://github.com/kooroshh/RoomSignalingServer#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "socket.io": "^3.1.1"
+  }
+}
