@@ -9,93 +9,127 @@ const listen_port = 2086;
 const server = require('https').createServer(credentials,app);
 const io = require('socket.io')(server);
 
+
+
+//region STRUCTURES
+/*
+User = { Socket, Name , Room : UUID }
+Room = { Viewers : List<User> , Broadcasters : List<User>, Owner : User , Name : String , ID : UUID}
+Message = { User : User , Message : String }
+
+
+
+
+*/
+//endregion
 app.use(express.static(__dirname + "/public"));
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/public/index.html');
 });
 const rooms = [
     {
-        "name" : "#general",
-        "owner" : null ,
-        "broadcasters" : new Map() ,
-        "viewers" : new Map()
+        "ID" : "4c56eeda-6d4d-11eb-9439-0242ac130002",
+        "Name" : "Sooskiato",
+        "Owner" : null ,
+        "Broadcasters" : [] ,
+        "Viewers" : []
     },
     {
-        "name" : "#sooskiato",
-        "owner" : null ,
-        "broadcasters" : new Map() ,
-        "viewers" : new Map()
-    },
-    {
-        "name" : "#auxiato",
-        "owner" : null ,
-        "broadcasters" : new Map() ,
-        "viewers" : new Map()
-    },
+        "ID" : "94ee1a14-6d4e-11eb-9439-0242ac130002",
+        "Name" : "General",
+        "Owner" : null ,
+        "Broadcasters" : [] ,
+        "Viewers" : []
+    }
 ] ;
 io.on('connection',(socket) => {
-    var room = "";
-    var name = "" ;
-    socket.join('#general');
-    socket.on('disconnect',() => {
-        sendServerMessage(room,`${name} left the channel`);
-    });
-    socket.on('message',(msg) => {
-        if(msg.msg === "+owner"){
-            rooms.forEach((v)=>{
-                if(v.name === room){
-                    v.owner = msg.sender;
-                    sendServerMessage(room,`${msg.sender} is now the owner of ${v.name}`);
-                }
-            });
-            return;
-        }
-        if(msg.msg.startsWith("+broadcaster")){
-            let parts = msg.msg.split(" ");
-            parts.shift()
-            let requested_username = parts.join(' ');
-            rooms.forEach((v) => {
-                if(v.name === room){
-                    let socket_id = null ;
-                    if(v.viewers.has(requested_username))
-                    {
-                        socket_id = v.viewers.get(requested_username);
-                        v.viewers.delete(requested_username);
-                    }
-                    v.broadcasters.set(requested_username,socket_id);
-                    sendServerMessage(socket_id,`${requested_username} please allow the mic permission`);
-                    io.to(socket_id).emit('rr',{});
-                    io.to(room).emit("new-broadcaster", {id : socket_id , name : requested_username});
-                    sendServerMessage(room,requested_username + " is now broadcaster");
+    const User = {
+        Socket : socket.id ,
+        Name  : Math.random().toString(36).substr(2),
+        Room : null
 
-                }
-            });
+    };
+    socket.on('disconnect',() => {
+        if (User.Room != null )
+            sendServerBroadcast(User.Room,`${User.Name} left the channel`);
+    });
+    socket.on('hello', (info)=>{
+        User.Name = info.Name;
+    });
+    socket.on('change-room',(id) => {
+        let roomIndex = rooms.findIndex(r => r.ID === id);
+        if(User.Room === rooms[roomIndex].ID)
+            return;
+        if(User.Room != null ) {
+            sendServerBroadcast(User.Room, `${User.Name} left the room`);
+            let pRoomIndex = rooms.findIndex(r => r.ID === User.Room);
+            let vIndex = rooms[pRoomIndex].Viewers.findIndex(u => u.Socket === socket.id);
+            if(vIndex>=0) {
+                rooms[pRoomIndex].Viewers.splice(vIndex, 1);
+                console.log(`Viewer Removed ${User.Name}`);
+            }
+            let bIndex = rooms[pRoomIndex].Broadcasters.findIndex(u => u.Socket === socket.id);
+            if(bIndex>=0) {
+                rooms[pRoomIndex].Broadcasters.splice(bIndex, 1);
+                console.log(`Broadcaster Removed ${User.Name}`);
+            }
+            socket.leave(User.Room);
+        }
+        User.Room = rooms[roomIndex].ID ;
+        socket.join(User.Room);
+        rooms[roomIndex].Viewers.push(User);
+        sendServerBroadcast(User.Room,`${User.Name} joined the room`);
+    });
+    socket.on('message',(message) => {
+        if(User.Room == null )
+            return;
+        let roomIndex = rooms.findIndex(r => r.ID === User.Room);
+        if(message === "+owner") {
+            rooms[roomIndex].Owner = User.Socket;
+            sendServerBroadcast(User.Room,`${User.Name} is now the owner of the ${rooms[roomIndex].Name}`);
             return;
         }
-        io.to(room).emit("message",{msg : msg.msg ,sender: msg.sender});
-    });
-    socket.on('control',(msg)=>{
-        socket.rooms.forEach((v,k,m)=>{
-            if(v.startsWith("#"))
-                socket.leave(v);
-        });
-        socket.join(msg.room);
-        io.to(socket.id).emit('room-changed',{});
-        addViewer(msg.room,msg.sender);
-    });
-    function addViewer(roomName,username){
-        name = username;
-        rooms.forEach((v) => {
-            if(v.name === roomName){
-                v.viewers.set(username,socket.id)
-                room = roomName;
-                sendServerMessage(socket.id,"You are talking in " + roomName);
-                sendServerMessage(room,`${username} has joined the room`,"Broadcast");
+        if(message === "whoami"){
+            sendServerBroadcast(socket.id,`${User.Name} === ${User.Room} === ${User.Socket}`)
+            return;
+        }
+        if(message === "+show"){
+            let msg = "\n========= Viewers =========\n";
+            rooms[roomIndex].Viewers.forEach((el=>{
+                msg += `${el.Socket} ~> ${el.Name}\n`;
+            }));
+            msg += "========= Broadcasters =========\n";
+            rooms[roomIndex].Broadcasters.forEach((el=>{
+                msg += `${el.Socket} ~> ${el.Name}\n`;
+            }));
+            msg += "========= Owner =========\n";
+            msg += `${ rooms[roomIndex].Owner } `
+            sendServerBroadcast(socket.id,msg);
+            return;
+        }
+        if(message.startsWith("+broadcaster")){
+            if(rooms[roomIndex].Owner !== User.Socket)
+                return;
+            let parts = message.split(" ");
+            parts.shift()
+            let request_id = parts.join(' ');
+            let vIndex = rooms[roomIndex].Viewers.findIndex(u => u.Socket === request_id);
+            let viewer = null ;
+            if(vIndex>=0) {
+                viewer = rooms[roomIndex].Viewers[vIndex];
+                rooms[roomIndex].Viewers.splice(vIndex, 1);
+                console.log(`Viewer Removed ${User.Name}`);
+                rooms[roomIndex].Broadcasters.push(viewer);
+                sendServerBroadcast(rooms[roomIndex].ID,`${viewer.Name} is now broadcaster`)
+            }else{
+                sendServerBroadcast(socket.id,"Viewer Not found");
             }
-        });
-    }
-    function sendServerMessage(to,msg,type = "Server"){
-        io.to(to).emit("message", {msg : msg , sender : type})
+            return;
+        }
+        io.to(User.Room).emit('message',{User: User,  Message : message});
+    });
+    function sendServerBroadcast(to,msg){
+        io.to(to).emit("broadcast", msg)
     }
 });
 server.listen(listen_port, () => {

@@ -2,50 +2,26 @@ class transport {
     constructor(io, user) {
         this.socket = io;
         this.username = user;
-        this.socket.on('room-changed', this.roomChanged);
-        this.socket.on('message', this.onMessage);
-        this.socket.on('new-broadcaster',this.onBroadcaster);
-        this.socket.on('rr', this.onRR);
-
+        this.socket.emit('hello',{Name : this.username})
+        this.socket.on('broadcast',this.onBroadcast);
+        this.socket.on('message',this.onMessage);
     }
-    onBroadcaster(data){
-        console.log(data);
+    onBroadcast = (msg) => {
+        this.appendMessage({msg : msg , sender: "Broadcast"});
     }
-    onRR() {
-        //get both video and audio streams from user's camera
-        navigator.mediaDevices.getUserMedia(
-            {video: false, audio: true},
-            function (stream) {
-                const mediaStream = new MediaStream(stream);
-                console.log("Got Media Stream");
-            },
-            function (err) {
-        });
+    changeRoom = (id) => {
+        this.socket.emit('change-room',id);
     }
-
-    onMessage(msg) {
-        var item = document.createElement('li');
-        item.textContent = "[" + msg.sender + "] : " + msg.msg;
+    appendMessage = (msg)=>{
+        const item = document.createElement('li');
+        item.innerText = "[" + msg.sender + "] : " + msg.msg;
         document.getElementById("messages").appendChild(item);
         window.scrollTo(0, document.body.scrollHeight);
     }
-
-    roomChanged() {
-        document.getElementById("messages").innerHTML = "";
+    sendMessage = (msg) => {
+        this.socket.emit('message',msg);
     }
-
-    send(message) {
-        this.socket.emit('message', {
-            msg: message,
-            sender: this.username,
-        });
-    }
-
-    changeRoom(roomName) {
-        console.log("Changing to " + roomName);
-        this.socket.emit('control', {
-            'room': roomName,
-            'sender': username
-        });
+    onMessage = (payload) => {
+        this.appendMessage({msg : payload.Message, sender : payload.User.Name});
     }
 }

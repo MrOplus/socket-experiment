@@ -62,9 +62,8 @@
 <body>
 Available Topics :
 <ul>
-    <li style="cursor: crosshair;" onclick="changeRoom('#sooskiato')">Sooskiato Moriato</li>
-    <li style="cursor: crosshair;" onclick="changeRoom('#auxiato')">Auxiato</li>
-    <li style="cursor: crosshair;" onclick="changeRoom('#general')">General Topic</li>
+    <li style="cursor: crosshair;" onclick="changeRoom('4c56eeda-6d4d-11eb-9439-0242ac130002')">#Sooskiato</li>
+    <li style="cursor: crosshair;" onclick="changeRoom('94ee1a14-6d4e-11eb-9439-0242ac130002')">#General</li>
 </ul>
 <video id="player" style="visibility: hidden;width: 0px;height: 0px" autoplay></video>
 <ul id="messages">
@@ -86,7 +85,7 @@ Available Topics :
     form.addEventListener('submit', function(e) {
         e.preventDefault();
         if (input.value) {
-            trans.send(input.value);
+            trans.sendMessage(input.value);
             input.value = '';
         }
     });
