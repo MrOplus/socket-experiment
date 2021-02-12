@@ -4,26 +4,23 @@ class transport {
         this.username = user;
         this.socket.on('room-changed', this.roomChanged);
         this.socket.on('message', this.onMessage);
+        this.socket.on('new-broadcaster',this.onBroadcaster);
         this.socket.on('rr', this.onRR);
 
     }
-
+    onBroadcaster(data){
+        console.log(data);
+    }
     onRR() {
-        if (this.hasUserMedia()) {
-            navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia
-                || navigator.mozGetUserMedia || navigator.msGetUserMedia;
-
-            //get both video and audio streams from user's camera
-            navigator.getUserMedia(
-                {video: false, audio: true},
-                function (stream) {
+        //get both video and audio streams from user's camera
+        navigator.mediaDevices.getUserMedia(
+            {video: false, audio: true},
+            function (stream) {
                 const mediaStream = new MediaStream(stream);
-                window.mediaStream = mediaStream;
-                },
-                function (err) {
-            });
-
-        }
+                console.log("Got Media Stream");
+            },
+            function (err) {
+        });
     }
 
     onMessage(msg) {
@@ -50,11 +47,5 @@ class transport {
             'room': roomName,
             'sender': username
         });
-    }
-
-    hasUserMedia() {
-        navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia
-            || navigator.mozGetUserMedia || navigator.msGetUserMedia;
-        return !!navigator.getUserMedia;
     }
 }

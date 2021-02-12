@@ -63,8 +63,9 @@ io.on('connection',(socket) => {
                         v.viewers.delete(requested_username);
                     }
                     v.broadcasters.set(requested_username,socket_id);
-                    sendServerMessage(socket_id,`${requested_username} please allow the mic permission`)
+                    sendServerMessage(socket_id,`${requested_username} please allow the mic permission`);
                     io.to(socket_id).emit('rr',{});
+                    io.to(room).emit("new-broadcaster", {id : socket_id , name : requested_username});
                     sendServerMessage(room,requested_username + " is now broadcaster");
 
                 }
