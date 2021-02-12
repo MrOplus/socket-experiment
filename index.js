@@ -49,9 +49,25 @@ io.on('connection',(socket) => {
         Room : null
 
     };
+    function removeUserFromRoomLists(){
+        let pRoomIndex = rooms.findIndex(r => r.ID === User.Room);
+        let vIndex = rooms[pRoomIndex].Viewers.findIndex(u => u.Socket === socket.id);
+        if(vIndex>=0) {
+            rooms[pRoomIndex].Viewers.splice(vIndex, 1);
+            console.log(`Viewer Removed : ${User.Name}`);
+        }
+        let bIndex = rooms[pRoomIndex].Broadcasters.findIndex(u => u.Socket === socket.id);
+        if(bIndex>=0) {
+            rooms[pRoomIndex].Broadcasters.splice(bIndex, 1);
+            console.log(`Broadcaster Removed : ${User.Name}`);
+        }
+    }
     socket.on('disconnect',() => {
-        if (User.Room != null )
-            sendServerBroadcast(User.Room,`${User.Name} left the channel`);
+        if (User.Room == null )
+            return;
+        removeUserFromRoomLists()
+        sendServerBroadcast(User.Room,`${User.Name} left the channel`);
+
     });
     socket.on('hello', (info)=>{
         User.Name = info.Name;
@@ -62,17 +78,7 @@ io.on('connection',(socket) => {
             return;
         if(User.Room != null ) {
             sendServerBroadcast(User.Room, `${User.Name} left the room`);
-            let pRoomIndex = rooms.findIndex(r => r.ID === User.Room);
-            let vIndex = rooms[pRoomIndex].Viewers.findIndex(u => u.Socket === socket.id);
-            if(vIndex>=0) {
-                rooms[pRoomIndex].Viewers.splice(vIndex, 1);
-                console.log(`Viewer Removed ${User.Name}`);
-            }
-            let bIndex = rooms[pRoomIndex].Broadcasters.findIndex(u => u.Socket === socket.id);
-            if(bIndex>=0) {
-                rooms[pRoomIndex].Broadcasters.splice(bIndex, 1);
-                console.log(`Broadcaster Removed ${User.Name}`);
-            }
+            removeUserFromRoomLists()
             socket.leave(User.Room);
         }
         User.Room = rooms[roomIndex].ID ;
@@ -113,6 +119,9 @@ io.on('connection',(socket) => {
             let parts = message.split(" ");
             parts.shift()
             let request_id = parts.join(' ');
+            let bIndex = rooms[roomIndex].Broadcasters.findIndex(u => u.Socket === request_id);
+            if(bIndex >0 )
+                return;
             let vIndex = rooms[roomIndex].Viewers.findIndex(u => u.Socket === request_id);
             let viewer = null ;
             if(vIndex>=0) {
@@ -120,7 +129,9 @@ io.on('connection',(socket) => {
                 rooms[roomIndex].Viewers.splice(vIndex, 1);
                 console.log(`Viewer Removed ${User.Name}`);
                 rooms[roomIndex].Broadcasters.push(viewer);
-                sendServerBroadcast(rooms[roomIndex].ID,`${viewer.Name} is now broadcaster`)
+                sendServerBroadcast(rooms[roomIndex].ID,`${viewer.Name} is now broadcaster waiting for offer`);
+                io.to(rooms[roomIndex].ID).emit('new-broadcaster',viewer.Socket);
+                io.to(viewer.Socket).emit("create-offer");
             }else{
                 sendServerBroadcast(socket.id,"Viewer Not found");
             }
@@ -128,6 +139,7 @@ io.on('connection',(socket) => {
         }
         io.to(User.Room).emit('message',{User: User,  Message : message});
     });
+
     function sendServerBroadcast(to,msg){
         io.to(to).emit("broadcast", msg)
     }
