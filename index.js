@@ -1,7 +1,14 @@
+const fs = require('fs');
 const express = require("express");
 const app = express();
-const http = require('http').createServer(app);
-const io = require('socket.io')(http);
+const privateKey  = fs.readFileSync('sslcerts/server.key', 'utf8');
+const certificate = fs.readFileSync('sslcerts/server.crt', 'utf8');
+const credentials = {key: privateKey, cert: certificate};
+const local = true;
+const listen_port = 2086;
+const server = require('https').createServer(credentials,app);
+const io = require('socket.io')(server);
+
 app.use(express.static(__dirname + "/public"));
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/public/index.html');
@@ -90,6 +97,6 @@ io.on('connection',(socket) => {
         io.to(to).emit("message", {msg : msg , sender : type})
     }
 });
-http.listen(3000, () => {
-    console.log('listening on *:3000');
+server.listen(listen_port, () => {
+    console.log(`listening on *:${listen_port}`);
 });
