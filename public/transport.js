@@ -19,19 +19,18 @@ class transport {
     servers = {
         "iceServers": [
             {
-                "urls": "stun:stun.l.google.com:19302"
+                url: "stun:stun.l.google.com:19302"
             },
             {
-                url: 'turn:192.158.29.39:3478?transport=udp',
-                credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
-                username: '28224511:1379330808'
+                url: 'turn:80.82.77.124:3478?transport=udp',
+                credential: 'koorosh',
+                username: '123456'
             }
         ]
     }
     localMedia = null ;
     getMedia = async ()=>{
         this.localMedia = await navigator.mediaDevices.getUserMedia({audio: true});
-        debugger;
     }
     onRemovedPeers = (id)=>{
         let videoEl = document.getElementById(id)
@@ -46,7 +45,8 @@ class transport {
             videoEl.srcObject = null;
             videoEl.parentNode.removeChild(videoEl);
         }
-        if (this.peers[id]) this.peers[id].destroy();
+        if (this.peers[id])
+            this.peers[id].destroy();
         delete this.peers[id];
     }
     onInitSend = async (id)=>{
@@ -63,7 +63,8 @@ class transport {
         this.peers[id] = new SimplePeer({
             initiator : isInit,
             config : this.servers,
-            stream : this.localMedia
+            stream : this.localMedia,
+            iceTransportPolicy: 'relay',
         });
         this.peers[id].on('signal',data => {
             socket.emit('signal', {
@@ -86,8 +87,16 @@ class transport {
             this.peers[id].send(`Hello Friend : ${id}`);
         });
         this.peers[id].on('data',(data)=>{
-            console.log(" "  + data);
+            console.info(">>>>>>>>>>>>>>>"  + data);
         });
+        this.peers[id].on('close', () => {
+           this.onRemovedPeers(id);
+        });
+        this.peers[id].on('error', (err) => {
+            console.error(err);
+        })
+
+
     }
     onBroadcast = (msg) => {
         this.appendMessage({msg: msg, sender: "Broadcast"});

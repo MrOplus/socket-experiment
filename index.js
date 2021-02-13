@@ -4,7 +4,7 @@ const app = express();
 const privateKey  = fs.readFileSync('sslcerts/server.key', 'utf8');
 const certificate = fs.readFileSync('sslcerts/server.crt', 'utf8');
 const credentials = {key: privateKey, cert: certificate};
-const listen_port = 2086;
+const listen_port = 2096;
 const server = require('https').createServer(credentials,app);
 const io = require('socket.io')(server);
 
@@ -13,6 +13,7 @@ const io = require('socket.io')(server);
 User = { Socket, Name , Room : UUID }
 Room = { Viewers : List<User> , Broadcasters : List<User>, Owner : User , Name : String , ID : UUID}
 Message = { User : User , Message : String }
+
 */
 //endregion
 app.use(express.static(__dirname + "/public"));
@@ -59,9 +60,9 @@ io.on('connection',(socket) => {
     socket.on('disconnect',() => {
         if (User.Room == null )
             return;
+        socket.to(User.Room).emit('removePeer', socket.id)
         removeUserFromRoomLists()
         sendServerBroadcast(User.Room,`${User.Name} left the channel`);
-        socket.to(User.Room).emit('removePeer', socket.id)
 
     });
     socket.on('hello', (info)=>{
