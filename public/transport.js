@@ -75,8 +75,6 @@ class transport {
             initiator : isInit,
             config : this.servers,
             stream : this.localMedia,
-            iceTransportPolicy: 'relay',
-            trickle: false,
             sdpTransform : (sdp)=>{
                 console.log(`SDP IS : ${sdp}`);
                 return sdp;
