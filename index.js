@@ -4,25 +4,19 @@ const app = express();
 const privateKey  = fs.readFileSync('sslcerts/server.key', 'utf8');
 const certificate = fs.readFileSync('sslcerts/server.crt', 'utf8');
 const credentials = {key: privateKey, cert: certificate};
-const local = true;
 const listen_port = 2086;
 const server = require('https').createServer(credentials,app);
 const io = require('socket.io')(server);
-
-
 
 //region STRUCTURES
 /*
 User = { Socket, Name , Room : UUID }
 Room = { Viewers : List<User> , Broadcasters : List<User>, Owner : User , Name : String , ID : UUID}
 Message = { User : User , Message : String }
-
-
-
-
 */
 //endregion
 app.use(express.static(__dirname + "/public"));
+app.use(express.static(__dirname+ '/node_modules'));
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/public/index.html');
 });
@@ -67,6 +61,7 @@ io.on('connection',(socket) => {
             return;
         removeUserFromRoomLists()
         sendServerBroadcast(User.Room,`${User.Name} left the channel`);
+        socket.to(User.Room).emit('removePeer', socket.id)
 
     });
     socket.on('hello', (info)=>{
@@ -84,6 +79,11 @@ io.on('connection',(socket) => {
         User.Room = rooms[roomIndex].ID ;
         socket.join(User.Room);
         rooms[roomIndex].Viewers.push(User);
+        if(rooms[roomIndex].Broadcasters.length > 0 ){
+            rooms[roomIndex].Broadcasters.forEach((user) =>{
+                io.to(socket.id).emit('initReceive',user.Socket);
+            });
+        }
         sendServerBroadcast(User.Room,`${User.Name} joined the room`);
     });
     socket.on('message',(message) => {
@@ -129,9 +129,10 @@ io.on('connection',(socket) => {
                 rooms[roomIndex].Viewers.splice(vIndex, 1);
                 console.log(`Viewer Removed ${User.Name}`);
                 rooms[roomIndex].Broadcasters.push(viewer);
-                sendServerBroadcast(rooms[roomIndex].ID,`${viewer.Name} is now broadcaster waiting for offer`);
-                io.to(rooms[roomIndex].ID).emit('new-broadcaster',viewer.Socket);
-                io.to(viewer.Socket).emit("create-offer");
+                sendServerBroadcast(rooms[roomIndex].ID,`${viewer.Name} is now broadcaster`);
+
+                //ASKING ALL CLIENTS TO SETUP THEIR RECEIVERS
+                sendCustomRoomBroadcast(rooms[roomIndex].ID,viewer.Socket,'initReceive',viewer.Socket);
             }else{
                 sendServerBroadcast(socket.id,"Viewer Not found");
             }
@@ -139,7 +140,29 @@ io.on('connection',(socket) => {
         }
         io.to(User.Room).emit('message',{User: User,  Message : message});
     });
+    socket.on('signal', data => {
+        console.log('sending signal from ' + socket.id + ' to ', data)
+        io.to(data.socket_id).emit('signal', {
+            socket_id: socket.id,
+            signal: data.signal
+        })
+    })
+    socket.on('initSend', init_socket_id => {
+        console.log('INIT SEND by ' + socket.id + ' for ' + init_socket_id)
+        io.to(init_socket_id).emit('initSend', socket.id)
+    })
 
+    function sendCustomRoomBroadcast(roomId,userId,event,payload){
+        let room = rooms.find(r => r.ID === roomId);
+        room.Viewers.forEach((user) => {
+            if(user.Socket === userId) return;
+            io.to(user.Socket).emit(event,payload);
+        });
+        room.Broadcasters.forEach((user) => {
+            if(user.Socket === userId ) return;
+            io.to(user.Socket).emit(event,payload);
+        });
+    }
     function sendServerBroadcast(to,msg){
         io.to(to).emit("broadcast", msg)
     }

@@ -65,7 +65,9 @@ Available Topics :
     <li style="cursor: crosshair;" onclick="changeRoom('4c56eeda-6d4d-11eb-9439-0242ac130002')">#Sooskiato</li>
     <li style="cursor: crosshair;" onclick="changeRoom('94ee1a14-6d4e-11eb-9439-0242ac130002')">#General</li>
 </ul>
-<video id="player" style="visibility: hidden;width: 0px;height: 0px" autoplay></video>
+<div style="width: 0px;height: 0px;display: none" id="players">
+
+</div>
 <ul id="messages">
 
 </ul>
@@ -74,6 +76,7 @@ Available Topics :
     <button>Send</button>
 </form>
 <script src="/socket.io/socket.io.js"></script>
+<script src="/simplepeer.min.js"></script>
 <script src="/transport.js"></script>
 <script>
     const socket = io();
