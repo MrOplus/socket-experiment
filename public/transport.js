@@ -106,7 +106,7 @@ class transport {
            this.onRemovedPeers(id);
         });
         this.peers[id].on('error', (err) => {
-            console.error(err);
+            console.log(err);
         })
     }
     onBroadcast = (msg) => {
