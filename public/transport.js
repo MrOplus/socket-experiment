@@ -13,7 +13,7 @@ class transport {
             console.log(`Received Signal from ${data.socket_id} \n${JSON.stringify(data.signal)}`);
             this.peers[data.socket_id].signal(data.signal)
         })
-        this.videos = document.getElementById("players");
+        this.audios = document.getElementById("players");
     }
     peers = []
     servers = {
@@ -30,20 +30,31 @@ class transport {
     }
     localMedia = null ;
     getMedia = async ()=>{
-        this.localMedia = await navigator.mediaDevices.getUserMedia({audio: true});
+        this.localMedia = await navigator.mediaDevices.getUserMedia({ audio: {
+                autoGainControl: false,
+                channelCount: 2,
+                echoCancellation: true,
+                latency: 0,
+                noiseSuppression: true,
+                sampleRate: 48000,
+                sampleSize: 16,
+                volume: 0.9
+            }
+        });
+        window.stream = this.localMedia;
     }
     onRemovedPeers = (id)=>{
-        let videoEl = document.getElementById(id)
-        if (videoEl) {
+        let audioEl = document.getElementById(id)
+        if (audioEl) {
 
-            const tracks = videoEl.srcObject.getTracks();
+            const tracks = audioEl.srcObject.getTracks();
 
             tracks.forEach(function (track) {
                 track.stop();
             })
 
-            videoEl.srcObject = null;
-            videoEl.parentNode.removeChild(videoEl);
+            audioEl.srcObject = null;
+            audioEl.parentNode.removeChild(audioEl);
         }
         if (this.peers[id])
             this.peers[id].destroy();
@@ -65,6 +76,10 @@ class transport {
             config : this.servers,
             stream : this.localMedia,
             iceTransportPolicy: 'relay',
+            sdpTransform : (sdp)=>{
+                console.log(`SDP IS : ${sdp}`);
+                return sdp;
+            }
         });
         this.peers[id].on('signal',data => {
             socket.emit('signal', {
@@ -74,13 +89,12 @@ class transport {
         });
 
         this.peers[id].on('stream', stream => {
-            let newVid = document.createElement('video')
-            newVid.srcObject = stream
-            newVid.id = id
-            newVid.playsinline = false
-            newVid.autoplay = true
-            newVid.className = "vid"
-            this.videos.appendChild(newVid)
+            let audioEl = document.createElement('audio')
+            audioEl.srcObject = stream
+            audioEl.id = id
+            audioEl.className = "aud"
+            this.audios.appendChild(audioEl)
+            audioEl.play();
         });
         this.peers[id].on('connect', () => {
             console.log(`Peer ${id} Connected`);
@@ -95,8 +109,6 @@ class transport {
         this.peers[id].on('error', (err) => {
             console.error(err);
         })
-
-
     }
     onBroadcast = (msg) => {
         this.appendMessage({msg: msg, sender: "Broadcast"});
