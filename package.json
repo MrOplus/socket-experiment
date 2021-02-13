@@ -4,7 +4,9 @@
   "description": "Signaling Server",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "build": "npm install",
+    "start": "nodemon index.js"
   },
   "repository": {
     "type": "git",
