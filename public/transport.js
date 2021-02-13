@@ -22,6 +22,11 @@ class transport {
                 url: "stun:stun.l.google.com:19302"
             },
             {
+                url: 'turn:80.82.77.124:3478?transport=tcp',
+                credential: 'koorosh',
+                username: '123456'
+            },
+            {
                 url: 'turn:80.82.77.124:3478?transport=udp',
                 credential: 'koorosh',
                 username: '123456'
