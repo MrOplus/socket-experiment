@@ -4,7 +4,7 @@ const app = express();
 const privateKey  = fs.readFileSync('sslcerts/server.key', 'utf8');
 const certificate = fs.readFileSync('sslcerts/server.crt', 'utf8');
 const credentials = {key: privateKey, cert: certificate};
-const listen_port = 2096;
+const listen_port = process.env.PORT || 2096;
 const server = require('https').createServer(credentials,app);
 const io = require('socket.io')(server);
 
