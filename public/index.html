@@ -75,11 +75,11 @@ Available Topics :
     <input id="input" autocomplete="off"/>
     <button>Send</button>
 </form>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.1/socket.io.js"></script>
+<script src="/socket.io/socket.io.js"></script>
 <script src="/simplepeer.min.js"></script>
 <script src="/transport.js"></script>
 <script>
-    const socket = io("https://socket-experiment.vercel.app/");
+    const socket = io();
     const form = document.getElementById('form');
     const input = document.getElementById('input');
     let username = prompt("WHO ARE YOU !?");
