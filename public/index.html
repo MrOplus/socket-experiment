@@ -79,7 +79,7 @@ Available Topics :
 <script src="/simplepeer.min.js"></script>
 <script src="/transport.js"></script>
 <script>
-    const socket = io();
+    const socket = io("https://socket-experiment.vercel.app/");
     const form = document.getElementById('form');
     const input = document.getElementById('input');
     let username = prompt("WHO ARE YOU !?");
