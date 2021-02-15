@@ -89,11 +89,17 @@ class transport {
         });
 
         this.peers[id].on('stream', stream => {
-            let audioEl = document.createElement('audio')
+            let audioEl = document.getElementById(id);
+            let found = true;
+            if(audioEl == null) {
+                audioEl = document.createElement('audio')
+                found = false;
+            }
             audioEl.srcObject = stream
             audioEl.id = id
             audioEl.className = "aud"
-            this.audios.appendChild(audioEl)
+            if(!found)
+                this.audios.appendChild(audioEl)
             audioEl.play();
         });
         this.peers[id].on('connect', () => {
