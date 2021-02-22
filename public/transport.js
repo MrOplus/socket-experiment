@@ -16,18 +16,39 @@ class transport {
         this.audios = document.getElementById("players");
     }
     peers = []
+//     servers = {
+//         "iceServers": [
+//             {
+//                 url: "stun:stun.l.google.com:19302"
+//             },
+//             {
+//                 url: 'turn:80.82.77.124:3478?transport=udp',
+//                 credential: 'koorosh',
+//                 username: '123456'
+//             },
+//         ]
+//     }
     servers = {
-        "iceServers": [
-            {
-                url: "stun:stun.l.google.com:19302"
+        "iceServers" : [ 
+            { 
+                "url":"stun:webcs.agora.io:3478"
             },
             {
-                url: 'turn:80.82.77.124:3478?transport=udp',
-                credential: 'koorosh',
-                username: '123456'
+                "username":"test",
+                "credential":"111111",
+                "credentialType":"password",
+                "urls":"turn:193-118-58-22.edge.agora.io:4732?transport=udp"
             },
+            {
+                "username":"test",
+                "credential":"111111",
+                "credentialType":"password",
+                "urls":"turn:193-118-58-22.edge.agora.io:4732?transport=tcp"
+            }
         ]
+        ,"sdpSemantics":"plan-b"
     }
+
     localMedia = null ;
     getMedia = async ()=>{
         this.localMedia = await navigator.mediaDevices.getUserMedia({ audio: {
